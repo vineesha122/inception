@@ -4789,6 +4789,17 @@ var PDFViewer = (function pdfViewer() {
         }
 
         var linkService = this.linkService;
+         function pagename(pageNum, pdfPage){
+                                                                  var pageView = self._pages[pageNum - 1];
+                                                                  if (!pageView.pdfPage) {
+                                                                    pageView.setPdfPage(pdfPage);
+                                                                  }
+                                                                  linkService.cachePageRef(pageNum, pdfPage.ref);
+                                                                  getPagesLeft--;
+                                                                  if (!getPagesLeft) {
+                                                                    resolvePagesPromise();
+                                                                  }
+                                                                }
 
         // Fetch all the pages since the viewport is needed before printing
         // starts to create the correct size canvas. Wait until one page is
@@ -4797,17 +4808,7 @@ var PDFViewer = (function pdfViewer() {
           if (!PDFJS.disableAutoFetch) {
             var getPagesLeft = pagesCount;
             for (var pageNum = 1; pageNum <= pagesCount; ++pageNum) {
-              pdfDocument.getPage(pageNum).then(function (pageNum, pdfPage) {
-                var pageView = self._pages[pageNum - 1];
-                if (!pageView.pdfPage) {
-                  pageView.setPdfPage(pdfPage);
-                }
-                linkService.cachePageRef(pageNum, pdfPage.ref);
-                getPagesLeft--;
-                if (!getPagesLeft) {
-                  resolvePagesPromise();
-                }
-              }.bind(null, pageNum));
+              pdfDocument.getPage(pageNum).then(pagename(pageNum, pdfPage)).bind(null, pageNum);
             }
           } else {
             // XXX: Printing is semi-broken with auto fetch disabled.

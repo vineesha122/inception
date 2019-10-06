@@ -31,15 +31,7 @@ export function renderKnob ({ x, y, readOnly, text, color}) {
 /**
  * Adjust the circle position not overlay anothers.
  */
-function adjustPoint (x, y, radius) {
-
-  // Get all knobs.
-  const $circles = $('.anno-knob')
-
-  // Find a position where all knobs are not placed at.
-  while (true) {
-    let good = true
-    $circles.each(function () {
+function change() {
       const $this = $(this)
       const x1 = parseInt($this.css('left'))
       const y1 = parseInt($this.css('top'))
@@ -48,7 +40,17 @@ function adjustPoint (x, y, radius) {
       if (distance1 < distance2) {
         good = false
       }
-    })
+    }
+
+function adjustPoint (x, y, radius) {
+
+  // Get all knobs.
+  const $circles = $('.anno-knob')
+
+  // Find a position where all knobs are not placed at.
+  while (true) {
+    let good = true
+    $circles.each(change())
     if (good) {
       break
     }
