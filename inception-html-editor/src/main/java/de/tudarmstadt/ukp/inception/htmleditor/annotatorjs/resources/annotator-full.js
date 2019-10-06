@@ -1776,6 +1776,19 @@
 
     Viewer.prototype.load = function(annotations) {
       var annotation, controller, controls, del, edit, element, field, item, link, links, list, _k, _l, _len2, _len3, _ref2, _ref3;
+      var mapShowEdit = showEdit: function() {
+                                      return edit.removeAttr('disabled');
+                                    };
+      var mapHideEdit = hideEdit: function() {
+                                      return edit.attr('disabled', 'disabled');
+                                    };
+       var mapShowDelete = showDelete: function() {
+                                         return del.removeAttr('disabled');
+                                       };
+       var mapHideDelete =  hideDelete: function() {
+                                          return del.attr('disabled', 'disabled');
+                                        };
+
       this.annotations = annotations || [];
       list = this.element.find('ul:first').empty();
       _ref2 = this.annotations;
@@ -1798,19 +1811,13 @@
           edit.remove();
           del.remove();
         } else {
-          controller = {
-            showEdit: function() {
-              return edit.removeAttr('disabled');
-            },
-            hideEdit: function() {
-              return edit.attr('disabled', 'disabled');
-            },
-            showDelete: function() {
-              return del.removeAttr('disabled');
-            },
-            hideDelete: function() {
-              return del.attr('disabled', 'disabled');
-            }
+          controller = { mapShowEdit
+          ,
+          mapHideEdit
+          ,
+           mapShowDelete
+           ,
+           mapHideDelete
           };
         }
         _ref3 = this.fields;
@@ -1860,6 +1867,9 @@
 
     LinkParser.prototype.get = function(rel, cond) {
       var d, k, keys, match, v, _k, _len2, _ref2, _results;
+      var mapReduce = function(m, k) {
+                                return m && (d[k] === cond[k]);
+                              };
       if (cond == null) {
         cond = {};
       }
@@ -1880,9 +1890,7 @@
       _results = [];
       for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
         d = _ref2[_k];
-        match = keys.reduce((function(m, k) {
-          return m && (d[k] === cond[k]);
-        }), true);
+        match = keys.reduce((mapReduce), true);
         if (match) {
           _results.push(d);
         } else {
