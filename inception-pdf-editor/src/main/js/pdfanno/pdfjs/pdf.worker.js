@@ -23601,17 +23601,6 @@ var Catalog = (function CatalogClosure() {
     this.pagePromises = [];
   }
 
-
-  function bran(kid) {
-                if (kid.has('Count')) {
-                  var count = kid.get('Count');
-                  total += count;
-                } else { // page leaf node
-                  total++;
-                }
-              }
-
-
   Catalog.prototype = {
     get metadata() {
       var streamRef = this.catDict.getRaw('Metadata');
@@ -23987,21 +23976,6 @@ var Catalog = (function CatalogClosure() {
       return this.pagePromises[pageIndex];
     },
 
-    function objekt(obj) {
-                  if (isDict(obj, 'Page') || (isDict(obj) && !obj.has('Kids'))) {
-                    if (pageIndex === currentPageIndex) {
-                      capability.resolve([obj, currentNode]);
-                    } else {
-                      currentPageIndex++;
-                      next();
-                    }
-                    return;
-                  }
-                  nodesToVisit.push(obj);
-                  next();
-                }
-
-
     getPageDict: function Catalog_getPageDict(pageIndex) {
       var capability = createPromiseCapability();
       var nodesToVisit = [this.catDict.getRaw('Pages')];
@@ -24014,7 +23988,19 @@ var Catalog = (function CatalogClosure() {
           var currentNode = nodesToVisit.pop();
 
           if (isRef(currentNode)) {
-            xref.fetchAsync(currentNode).then(objekt(obj), capability.reject);
+            xref.fetchAsync(currentNode).then(function (obj) {
+              if (isDict(obj, 'Page') || (isDict(obj) && !obj.has('Kids'))) {
+                if (pageIndex === currentPageIndex) {
+                  capability.resolve([obj, currentNode]);
+                } else {
+                  currentPageIndex++;
+                  next();
+                }
+                return;
+              }
+              nodesToVisit.push(obj);
+              next();
+            }, capability.reject);
             return;
           }
 
@@ -24092,7 +24078,14 @@ var Catalog = (function CatalogClosure() {
               found = true;
               break;
             }
-            kidPromises.push(xref.fetchAsync(kid).then(bran(kid)));
+            kidPromises.push(xref.fetchAsync(kid).then(function (kid) {
+              if (kid.has('Count')) {
+                var count = kid.get('Count');
+                total += count;
+              } else { // page leaf node
+                total++;
+              }
+            }));
           }
           if (!found) {
             error('kid ref not found in parents kids');
@@ -37226,20 +37219,6 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
       return glyphs;
     },
 
-    function handlemask() {
-                    return self.handleSMask(dict, resources, operatorList,
-                                            task, stateManager);
-                  }
-    function handlefont() {
-                   return self.handleSetFont(resources, null, value[0], operatorList,
-                                             task, stateManager.state).
-                     then(function (loadedName) {
-                       operatorList.addDependency(loadedName);
-                       gStateObj.push([key, [loadedName, value[1]]]);
-                     });
-                 }
-
-
     setGState: function PartialEvaluator_setGState(resources, gState,
                                                    operatorList, task,
                                                    xref, stateManager) {
@@ -37265,7 +37244,14 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
             gStateObj.push([key, value]);
             break;
           case 'Font':
-            promise = promise.then(handlefont());
+            promise = promise.then(function () {
+              return self.handleSetFont(resources, null, value[0], operatorList,
+                                        task, stateManager.state).
+                then(function (loadedName) {
+                  operatorList.addDependency(loadedName);
+                  gStateObj.push([key, [loadedName, value[1]]]);
+                });
+            });
             break;
           case 'BM':
             gStateObj.push([key, value]);
@@ -37277,7 +37263,10 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
             }
             var dict = xref.fetchIfRef(value);
             if (isDict(dict)) {
-              promise = promise.then(handlemask());
+              promise = promise.then(function () {
+                return self.handleSMask(dict, resources, operatorList,
+                                        task, stateManager);
+              });
               gStateObj.push([key, true]);
             } else {
               warn('Unsupported SMask type');
@@ -37508,12 +37497,6 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
       var stateManager = new StateManager(initialState || new EvalState());
       var preprocessor = new EvaluatorPreprocessor(stream, xref, stateManager);
       var timeSlotManager = new TimeSlotManager();
-      function loadname(loadedName) {
-                        operatorList.addDependency(loadedName);
-                        operatorList.addOp(OPS.setFont, [loadedName, fontSize]);
-                        next(resolve, reject);
-                      }
-
 
       return new Promise(function next(resolve, reject) {
         task.ensureNotTerminated();
@@ -37585,7 +37568,11 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
               // eagerly collect all fonts
               return self.handleSetFont(resources, args, null, operatorList,
                                         task, stateManager.state).
-                then(loadname(loadedName), reject);
+                then(function (loadedName) {
+                  operatorList.addDependency(loadedName);
+                  operatorList.addOp(OPS.setFont, [loadedName, fontSize]);
+                  next(resolve, reject);
+                }, reject);
             case OPS.endInlineImage:
               var cacheKey = args[0].cacheKey;
               if (cacheKey) {
@@ -38044,16 +38031,6 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
       }
 
       var timeSlotManager = new TimeSlotManager();
-      function textform(formTextContent) {
-                        Util.appendToArray(textContent.items, formTextContent.items);
-                        Util.extendObj(textContent.styles, formTextContent.styles);
-                        stateManager.restore();
-
-                        xobjsCache.key = name;
-                        xobjsCache.texts = formTextContent;
-
-                        next(resolve, reject);
-                      }
 
       return new Promise(function next(resolve, reject) {
         task.ensureNotTerminated();
@@ -38252,7 +38229,16 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
 
               return self.getTextContent(xobj, task,
                 xobj.dict.get('Resources') || resources, stateManager,
-                normalizeWhitespace).then(textform(formTextContent), reject);
+                normalizeWhitespace).then(function (formTextContent) {
+                  Util.appendToArray(textContent.items, formTextContent.items);
+                  Util.extendObj(textContent.styles, formTextContent.styles);
+                  stateManager.restore();
+
+                  xobjsCache.key = name;
+                  xobjsCache.texts = formTextContent;
+
+                  next(resolve, reject);
+                }, reject);
             case OPS.setGState:
               flushTextContentItem();
               var dictName = args[0];
