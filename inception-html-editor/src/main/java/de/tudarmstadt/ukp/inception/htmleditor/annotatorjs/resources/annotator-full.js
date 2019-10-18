@@ -328,9 +328,7 @@
     return event != null ? typeof event.preventDefault === "function" ? event.preventDefault() : void 0 : void 0;
   };
 
-   function ämne() {
-            return console.log(_t("Not implemented:") + (" console." + name));
-          }
+   
 
   functions = ["log", "debug", "info", "warn", "exception", "assert", "dir", "dirxml", "trace", "group", "groupEnd", "groupCollapsed", "time", "timeEnd", "profile", "profileEnd", "count", "clear", "table", "error", "notifyFirebug", "firebug", "userObjects"];
 
@@ -346,7 +344,9 @@
     for (_i = 0, _len = functions.length; _i < _len; _i++) {
       fn = functions[_i];
       if (console[fn] == null) {
-        console[fn] = ämne();
+        console[fn] = function() {
+          return console.log(_t("Not implemented:") + (" console." + name));
+        };
       }
     }
   } else {
