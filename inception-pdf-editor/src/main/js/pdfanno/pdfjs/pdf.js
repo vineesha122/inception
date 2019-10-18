@@ -4137,12 +4137,6 @@ var SVGGraphics = (function SVGGraphicsClosure() {
       var fnArray = operatorList.fnArray;
       var fnArrayLen = fnArray.length;
       var argsArray = operatorList.argsArray;
-      var mapResolve = function(resolve) {
-                                       self.commonObjs.get(obj, resolve);
-                                     };
-      var mapReResolve = function(resolve) {
-                                         self.objs.get(obj, resolve);
-                                       };
 
       var self = this;
       for (var i = 0; i < fnArrayLen; i++) {
@@ -4153,9 +4147,13 @@ var SVGGraphics = (function SVGGraphicsClosure() {
             var common = obj.substring(0, 2) === 'g_';
             var promise;
             if (common) {
-              promise = new Promise(mapResolve);
+              promise = new Promise(function(resolve) {
+                self.commonObjs.get(obj, resolve);
+              });
             } else {
-              promise = new Promise(mapReResolve);
+              promise = new Promise(function(resolve) {
+                self.objs.get(obj, resolve);
+              });
             }
             this.current.dependencies.push(promise);
           }
